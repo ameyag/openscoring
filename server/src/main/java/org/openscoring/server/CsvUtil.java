@@ -32,6 +32,7 @@ public class CsvUtil {
 
 	private CsvUtil(){
 	}
+    private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
 	static
 	public CsvPreference getFormat(BufferedReader reader) throws IOException {
@@ -109,22 +110,30 @@ public class CsvUtil {
 		CsvMapWriter formatter = new CsvMapWriter(writer, format);
 
 		String[] header = null;
+        lock.writeLock.lock();
+        
+        try
+        {
 
-		for(EvaluationResponse response : responses){
-			Map<String, ?> result = response.getResult();
+            for(EvaluationResponse response : responses){
+                Map<String, ?> result = response.getResult();
 
-			if(header == null){
-				Set<String> keys = result.keySet();
+                if(header == null){
+                    Set<String> keys = result.keySet();
 
-				header = (keys).toArray(new String[keys.size()]);
+                    header = (keys).toArray(new String[keys.size()]);
 
-				formatter.writeHeader(header);
-			}
+                    formatter.writeHeader(header);
+                }
 
-			formatter.write(result, header);
-		}
-
+                formatter.write(result, header);
+            }
+        
 		formatter.flush();
 		formatter.close();
+        }
+        finally {
+            lock.writeLock.unlock();
+        }
 	}
 }
